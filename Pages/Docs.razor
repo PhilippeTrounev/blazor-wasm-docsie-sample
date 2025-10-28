@@ -1,0 +1,55 @@
+@page "/docs"
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<PageTitle>Docsie Documentation</PageTitle>
+
+<div style="padding: 20px;">
+    <h1>Docsie Documentation Example (Blazor WASM)</h1>
+    <p>This component demonstrates how to embed Docsie documentation in Blazor WebAssembly.</p>
+
+    <!-- Important: This div is isolated from Blazor's render tree -->
+    @((MarkupString)"<div id=\"docsie-container\" data-ddsroot></div>")
+</div>
+
+@code {
+    private IJSObjectReference? module;
+    private bool isInitialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !isInitialized)
+        {
+            try
+            {
+                // Import our JavaScript module
+                module = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", "./js/docsie-loader.js");
+
+                // Initialize Docsie with deployment ID
+                await module.InvokeVoidAsync("initializeDocsie", "deployment_EFk3AIigMh599HRk6", null);
+
+                isInitialized = true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error initializing Docsie: {ex.Message}");
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (module is not null)
+        {
+            // Cleanup Docsie instance
+            try
+            {
+                await module.InvokeVoidAsync("cleanupDocsie");
+            }
+            catch { }
+
+            await module.DisposeAsync();
+        }
+    }
+}

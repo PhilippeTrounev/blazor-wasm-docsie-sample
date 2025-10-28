@@ -1,0 +1,109 @@
+@page "/secure-docs"
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<PageTitle>Secure Docsie Documentation</PageTitle>
+
+<div style="padding: 20px;">
+    <h1>Secure Docsie Documentation (JWT Auth)</h1>
+    <p>This component demonstrates JWT-authenticated access to secured Docsie deployments.</p>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div style="padding: 15px; background: #fee; border: 1px solid #fcc; border-radius: 4px; margin: 20px 0;">
+            <strong>Error:</strong> @errorMessage
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <div style="padding: 20px; text-align: center;">
+            <p>Loading secure documentation...</p>
+        </div>
+    }
+
+    <!-- Important: This div is isolated from Blazor's render tree -->
+    @((MarkupString)"<div id=\"secure-docsie-container\" data-ddsroot></div>")
+</div>
+
+@code {
+    private IJSObjectReference? module;
+    private bool isInitialized = false;
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !isInitialized)
+        {
+            try
+            {
+                // Import our JavaScript module
+                module = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", "./js/secure-docsie-loader.js");
+
+                // Generate JWT token
+                string jwtToken = GenerateJwtToken();
+
+                // Initialize Docsie with deployment ID and JWT
+                await module.InvokeVoidAsync("initializeSecureDocsie",
+                    "deployment_No7ZEhXLoDHoW4RH7",
+                    jwtToken,
+                    "https://app.docsie.io/enterprise/viewer/login/deployment_No7ZEhXLoDHoW4RH7/");
+
+                isInitialized = true;
+                isLoading = false;
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error initializing secure Docsie: {ex.Message}";
+                isLoading = false;
+                StateHasChanged();
+                Console.WriteLine($"Error: {ex.Message}");
+            }
+        }
+    }
+
+    private string GenerateJwtToken()
+    {
+        // IMPORTANT: In production, this should be done server-side!
+        // For this example, we're generating client-side for demonstration
+        // Real implementation should call a backend API that generates the token
+
+        // For now, return empty string - user will be redirected to login
+        // To actually generate JWT, you need:
+        // 1. The deployment's master_key from your database
+        // 2. System.IdentityModel.Tokens.Jwt package
+        // 3. Sign with HS256 algorithm
+
+        // Example (requires master key):
+        /*
+        var masterKey = "your_master_key_from_database";
+        var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(masterKey));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var token = new JwtSecurityToken(
+            expires: DateTime.UtcNow.AddHours(1),
+            signingCredentials: credentials
+        );
+        return new JwtSecurityTokenHandler().WriteToken(token);
+        */
+
+        // For demo: return empty, will trigger fallback login
+        return "";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (module is not null)
+        {
+            try
+            {
+                await module.InvokeVoidAsync("cleanupSecureDocsie");
+            }
+            catch { }
+
+            await module.DisposeAsync();
+        }
+    }
+}
