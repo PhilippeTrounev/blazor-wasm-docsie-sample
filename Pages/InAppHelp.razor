@@ -1,0 +1,153 @@
+@page "/inapp-help"
+@inject IJSRuntime JSRuntime
+
+<PageTitle>In-App Help Demo</PageTitle>
+
+<style>
+    .demo-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .demo-section {
+        background: white;
+        border-radius: 8px;
+        padding: 30px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .demo-section h2 {
+        color: #2563eb;
+        margin-top: 0;
+    }
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+    .feature-card {
+        background: #f8fafc;
+        padding: 20px;
+        border-radius: 6px;
+        border-left: 4px solid #2563eb;
+    }
+    .help-tag {
+        display: inline-block;
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin: 5px;
+        cursor: help;
+    }
+    .code-example {
+        background: #1e293b;
+        color: #e2e8f0;
+        padding: 15px;
+        border-radius: 6px;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        overflow-x: auto;
+    }
+</style>
+
+<div class="demo-container">
+    <h1>Docsie In-App Help System Demo</h1>
+    <p style="color: #666; margin-bottom: 30px;">
+        Interactive help widget embedded directly in your Blazor application.
+        Look for the help button that appears on the page!
+    </p>
+
+    <div class="demo-section">
+        <h2>What is In-App Help?</h2>
+        <p>
+            In-app help is a contextual assistance system that lives inside your application.
+            Instead of redirecting users to external documentation, help content appears right where they need it.
+        </p>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>🔍 Contextual Search</h3>
+                <p>Users can search your documentation without leaving your app. Results appear instantly in a side panel.</p>
+            </div>
+            <div class="feature-card">
+                <h3>📚 Knowledge Base</h3>
+                <p>Full documentation accessible via widget. Articles, guides, and FAQs in one place.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🎯 Smart Tagging</h3>
+                <p>Tag UI elements to show relevant help content automatically based on what users are viewing.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🌍 Multi-Language</h3>
+                <p>Built-in internationalization. Serve help content in your users' preferred language.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>How It Works in Blazor</h2>
+        <p>Add the script tag to your index.html or dynamically load it:</p>
+
+        <div class="code-example">
+&lt;script async type="text/javascript"
+        src="https://lib.docsie.io/inapp/current/service.js"
+        data-docsie-inapp="deploykey:help_center_di3sLV7rJwx3RynsXGee,
+                           selfInit:true,
+                           search:true,
+                           tours:true,
+                           support:true,
+                           language:primary,
+                           version:primary"&gt;
+&lt;/script&gt;
+        </div>
+
+        <p style="margin-top: 15px;">
+            The help widget automatically appears with search, tours, and support features enabled.
+        </p>
+    </div>
+
+    <div class="demo-section">
+        <h2>Context-Aware Help with Tags</h2>
+        <p>Tag specific elements to show relevant documentation:</p>
+
+        <div style="margin-top: 20px;">
+            <span class="help-tag" data-docsie-tag="getting-started">Getting Started</span>
+            <span class="help-tag" data-docsie-tag="api-integration">API Integration</span>
+            <span class="help-tag" data-docsie-tag="authentication">Authentication</span>
+            <span class="help-tag" data-docsie-tag="deployment">Deployment</span>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>Use Cases</h2>
+
+        <h3>SaaS Applications</h3>
+        <p>Reduce support tickets by providing instant help. Users get answers without waiting for email responses.</p>
+
+        <h3>Enterprise Dashboards</h3>
+        <p>Complex enterprise software becomes easier to use with contextual help at every step.</p>
+
+        <h3>Developer Tools</h3>
+        <p>API documentation, code examples, and integration guides accessible without leaving your platform.</p>
+
+        <h3>Customer Portals</h3>
+        <p>Self-service support for customers. Find answers to common questions instantly.</p>
+    </div>
+
+    <div class="demo-section">
+        <h2>Try It Now</h2>
+        <p>
+            The in-app help widget is active on this page. Look for the help button to open it
+            and explore the documentation, search functionality, and more.
+        </p>
+    </div>
+</div>
+
+<!-- Raw HTML for in-app help script (support disabled - requires auth) -->
+@((MarkupString)"<script async type='text/javascript' src='https://lib.docsie.io/inapp/current/service.js' data-docsie-inapp='deploykey:help_center_di3sLV7rJwx3RynsXGee,selfInit:true,search:true,tours:true,support:false,language:primary,version:primary'></script>")
+
+@code {
+    // No code needed - in-app help loads automatically via script tag
+}

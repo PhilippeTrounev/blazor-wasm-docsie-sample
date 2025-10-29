@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # API Server - Generates JWT tokens
+  api-server:
+    build:
+      context: ./Server
+      dockerfile: Dockerfile
+    container_name: docsie-api-server
+    ports:
+      - "5145:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - DOCSIE_MASTER_KEY=${DOCSIE_MASTER_KEY}
+      - DOCSIE_DEPLOYMENT_KEY=${DOCSIE_DEPLOYMENT_KEY}
+      - JWT_ISSUER=${JWT_ISSUER}
+      - JWT_AUDIENCE=${JWT_AUDIENCE}
+      - JWT_EXPIRY_MINUTES=${JWT_EXPIRY_MINUTES}
+    env_file:
+      - .env
+    networks:
+      - docsie-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-X", "POST", "http://localhost:8080/api/auth/token"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Blazor WASM - Frontend client
+  blazor-client:
+    build:
+      context: .
+      dockerfile: Dockerfile.blazor
+    container_name: docsie-blazor-client
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+    depends_on:
+      api-server:
+        condition: service_healthy
+    networks:
+      - docsie-network
+
+networks:
+  docsie-network:
+    driver: bridge

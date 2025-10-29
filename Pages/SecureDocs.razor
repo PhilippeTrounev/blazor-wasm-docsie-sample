@@ -1,6 +1,8 @@
 @page "/secure-docs"
 @inject IJSRuntime JSRuntime
+@inject AuthService AuthService
 @implements IAsyncDisposable
+@using blazor_wasm_docsie_sample.Services
 
 <PageTitle>Secure Docsie Documentation</PageTitle>
 
@@ -42,14 +44,24 @@
                 module = await JSRuntime.InvokeAsync<IJSObjectReference>(
                     "import", "./js/secure-docsie-loader.js");
 
-                // Generate JWT token
-                string jwtToken = GenerateJwtToken();
+                // Get JWT token from backend API
+                string? jwtToken = await AuthService.GetJwtTokenAsync();
+
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    errorMessage = "Failed to get authentication token from server. Make sure the API server is running on http://localhost:5145";
+                    isLoading = false;
+                    StateHasChanged();
+                    return;
+                }
+
+                Console.WriteLine($"Got JWT token: {jwtToken.Substring(0, 50)}...");
 
                 // Initialize Docsie with deployment ID and JWT
+                // The JS will add token to URL and set fallback to our login page
                 await module.InvokeVoidAsync("initializeSecureDocsie",
                     "deployment_No7ZEhXLoDHoW4RH7",
-                    jwtToken,
-                    "https://app.docsie.io/enterprise/viewer/login/deployment_No7ZEhXLoDHoW4RH7/");
+                    jwtToken);
 
                 isInitialized = true;
                 isLoading = false;
@@ -63,34 +75,6 @@
                 Console.WriteLine($"Error: {ex.Message}");
             }
         }
-    }
-
-    private string GenerateJwtToken()
-    {
-        // IMPORTANT: In production, this should be done server-side!
-        // For this example, we're generating client-side for demonstration
-        // Real implementation should call a backend API that generates the token
-
-        // For now, return empty string - user will be redirected to login
-        // To actually generate JWT, you need:
-        // 1. The deployment's master_key from your database
-        // 2. System.IdentityModel.Tokens.Jwt package
-        // 3. Sign with HS256 algorithm
-
-        // Example (requires master key):
-        /*
-        var masterKey = "your_master_key_from_database";
-        var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(masterKey));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var token = new JwtSecurityToken(
-            expires: DateTime.UtcNow.AddHours(1),
-            signingCredentials: credentials
-        );
-        return new JwtSecurityTokenHandler().WriteToken(token);
-        */
-
-        // For demo: return empty, will trigger fallback login
-        return "";
     }
 
     public async ValueTask DisposeAsync()

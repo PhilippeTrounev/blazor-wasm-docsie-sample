@@ -1,0 +1,17 @@
+# Exclude the Server directory from Blazor WASM Docker build
+Server/
+
+# Standard .NET ignores
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.log
+
+# Environment files
+.env
+
+# Git
+.git/
+.gitignore

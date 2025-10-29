@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docsie Authentication - Demo Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #667eea;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .demo-notice {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: #856404;
+        }
+
+        .demo-notice strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .info-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .info-section h3 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .info-section code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #e83e8c;
+        }
+
+        .info-section p {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .redirect-info {
+            background: #e7f3ff;
+            border-left: 4px solid #2196f3;
+            padding: 12px;
+            margin-top: 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>🔐 Docsie Auth</h1>
+            <p>Secure Documentation Portal</p>
+        </div>
+
+        <div class="demo-notice">
+            <strong>⚠️ Demo Mode</strong>
+            This is a mock login page for demonstration purposes. Any username/password will work.
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" placeholder="Enter any username" value="demo-user" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter any password" value="password" required>
+            </div>
+
+            <button type="submit" class="btn-login">Login & Get JWT Token</button>
+        </form>
+
+        <div class="info-section">
+            <h3>🔧 Implementation Notes:</h3>
+            <p>1. This endpoint accepts any credentials (demo mode)</p>
+            <p>2. Generates JWT using <code>DOCSIE_MASTER_KEY</code></p>
+            <p>3. Redirects back to portal with <code>?token=JWT</code></p>
+
+            <div id="redirectInfo" class="redirect-info" style="display: none;">
+                <strong>Redirect URL:</strong><br>
+                <span id="redirectUrl"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get redirect URL from query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectUrl = urlParams.get('redirect') || urlParams.get('return') || 'http://localhost:5000/secure-docs';
+
+        // Show redirect info
+        if (redirectUrl) {
+            document.getElementById('redirectInfo').style.display = 'block';
+            document.getElementById('redirectUrl').textContent = redirectUrl;
+        }
+
+        // Handle form submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // Show loading state
+            const btn = document.querySelector('.btn-login');
+            btn.textContent = 'Generating JWT Token...';
+            btn.disabled = true;
+
+            try {
+                // Call backend to get JWT token
+                const response = await fetch('/api/auth/token', {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to get JWT token');
+                }
+
+                const data = await response.json();
+                const jwtToken = data.token;
+
+                // Build redirect URL with token
+                const separator = redirectUrl.includes('?') ? '&' : '?';
+                const finalUrl = `${redirectUrl}${separator}token=${jwtToken}`;
+
+                console.log('Redirecting to:', finalUrl);
+
+                // Redirect back to portal with token
+                window.location.href = finalUrl;
+
+            } catch (error) {
+                console.error('Login error:', error);
+                btn.textContent = 'Error - Try Again';
+                btn.disabled = false;
+                alert('Failed to generate JWT token. Make sure the API server is running.');
+            }
+        });
+    </script>
+</body>
+</html>

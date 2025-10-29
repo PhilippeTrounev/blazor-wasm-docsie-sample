@@ -1,36 +1,78 @@
 # Docsie Blazor WebAssembly Sample
 
-Blazor WebAssembly example showing how to embed Docsie documentation in a client-side Blazor application.
+Complete Blazor WebAssembly example showing how to embed Docsie documentation with full JWT authentication support.
+
+## Features
+
+✅ **Public Documentation** - Embed public Docsie portals
+✅ **JWT Authentication** - Complete server-side JWT generation and validation
+✅ **Secure Deployments** - Access password-protected documentation
+✅ **Mock Login Page** - Demo authentication flow for developers
+✅ **Docker Support** - Run complete stack with Docker Compose
+✅ **Production Ready** - Environment variables and proper secret management
 
 ## Requirements
 
 - .NET SDK 9.0 or later (works on Mac, Windows, Linux)
+- Docker Desktop (optional, for containerized deployment)
 - Any modern web browser
 
-## Running the Sample
+## Quick Start
+
+### Option 1: Docker Compose (Recommended)
+
+See [README-DOCKER.md](./README-DOCKER.md) for complete Docker setup instructions.
+
+```bash
+# 1. Copy environment file
+cp .env.example .env
+
+# 2. Add your Docsie master key to .env
+# Edit .env and set DOCSIE_MASTER_KEY=your_key_here
+
+# 3. Run with Docker Compose
+docker-compose up --build
+```
+
+**Access the applications:**
+- Blazor Client: http://localhost:5000
+- API Server: http://localhost:5145
+- Mock Login: http://localhost:5145/api/auth/login
+
+### Option 2: Local Development
 
 1. Navigate to the project directory:
    ```bash
    cd blazor-wasm-docsie-sample
    ```
 
-2. Run the application:
+2. Start the API server (in one terminal):
+   ```bash
+   cd Server
+   dotnet run --urls "http://localhost:5145"
+   ```
+
+3. Start the Blazor WASM client (in another terminal):
    ```bash
    dotnet run
    ```
 
-3. Open your browser to:
-   - https://localhost:5001 (secure)
-   - http://localhost:5000 (non-secure)
-
-4. Click "Documentation" in the navigation menu
+4. Open your browser to http://localhost:5000
 
 ## What This Demonstrates
 
-- **Blazor WASM Integration**: Shows how to embed Docsie in client-side Blazor applications
-- **JavaScript Interop**: Uses JSInterop to load and manage external JavaScript library
+### Core Integration
+- **Blazor WASM Integration**: Embed Docsie in client-side Blazor applications
+- **JavaScript Interop**: JSInterop for external JavaScript library management
 - **Lifecycle Management**: Proper initialization and cleanup of Docsie script
-- **DOM Isolation**: Prevents Blazor render tree from conflicting with Docsie's Inferno.js rendering
+- **DOM Isolation**: Prevents Blazor render tree conflicts with Docsie's Inferno.js
+
+### JWT Authentication
+- **Server-Side JWT Generation**: ASP.NET Core API generates tokens using Docsie master key
+- **Minimal JWT Claims**: Only `exp` claim (matches Docsie's format exactly)
+- **URL Parameter Auth**: JWT passed via `?token=...` query parameter
+- **Mock Login Flow**: Complete authentication redirect demonstration
+- **Master Key Security**: Environment variables and `.gitignore` protection
 
 ## Architecture
 
@@ -95,63 +137,52 @@ export function initializeDocsie(deploymentId, jwtToken) {
 }
 ```
 
-## Adding JWT Authentication
+## JWT Authentication Flow
 
-To add JWT authentication for secured deployments:
+```
+┌─────────────┐         ┌──────────────────┐         ┌──────────────┐
+│   Visitor   │────────>│  Your Backend    │         │    Docsie    │
+│  (Browser)  │         │  (Port 5145)     │         │   (Cloud)    │
+└─────────────┘         └──────────────────┘         └──────────────┘
+       │                          │                           │
+       │  1. Access portal        │                           │
+       ├─────────────────────────>│                           │
+       │                          │                           │
+       │  2. Generate JWT         │                           │
+       │     (signed with         │                           │
+       │      master key)         │                           │
+       │<─────────────────────────│                           │
+       │                          │                           │
+       │  3. Load portal with token in URL                    │
+       │     (?token=eyJ...)      │                           │
+       ├──────────────────────────┼──────────────────────────>│
+       │                          │                           │
+       │                          │  4. Validate JWT          │
+       │                          │     (using master key)    │
+       │                          │<──────────────────────────│
+       │                          │                           │
+       │  5. Show secured content │                           │
+       │<─────────────────────────┼───────────────────────────│
+```
 
-1. Install JWT package:
-   ```bash
-   dotnet add package System.IdentityModel.Tokens.Jwt
-   ```
+### Key Points
 
-2. Create JWT service:
-   ```csharp
-   // Services/DocsieAuthService.cs
-   using System.IdentityModel.Tokens.Jwt;
-   using Microsoft.IdentityModel.Tokens;
+1. **JWT contains only `exp` claim** - Docsie expects minimal JWT: `{'exp': timestamp}`
+2. **Signed with master key** - Use HS256 algorithm with deployment's master key
+3. **Passed in URL** - Token goes in query parameter: `?token=JWT_HERE`
+4. **Fallback URL** - If auth fails, Docsie redirects to your login page
 
-   public class DocsieAuthService
-   {
-       public string GenerateJwtToken(string masterKey)
-       {
-           var key = new SymmetricSecurityKey(
-               System.Text.Encoding.UTF8.GetBytes(masterKey));
-           var credentials = new SigningCredentials(
-               key, SecurityAlgorithms.HmacSha256);
+### Implementation
 
-           var token = new JwtSecurityToken(
-               expires: DateTime.UtcNow.AddHours(1),
-               signingCredentials: credentials
-           );
-
-           return new JwtSecurityTokenHandler().WriteToken(token);
-       }
-   }
-   ```
-
-3. Register service in `Program.cs`:
-   ```csharp
-   builder.Services.AddScoped<DocsieAuthService>();
-   ```
-
-4. Update `Docs.razor`:
-   ```razor
-   @inject DocsieAuthService AuthService
-
-   @code {
-       protected override async Task OnAfterRenderAsync(bool firstRender)
-       {
-           if (firstRender)
-           {
-               var jwtToken = AuthService.GenerateJwtToken("your_master_key");
-               await module.InvokeVoidAsync("initializeDocsie",
-                   "deployment_YOUR_ID", jwtToken);
-           }
-       }
-   }
-   ```
+See the complete implementation in:
+- **Server/Controllers/AuthController.cs** - JWT generation endpoint
+- **wwwroot/js/secure-docsie-loader.js** - Client-side token handling
+- **Pages/SecureDocs.razor** - Blazor component integration
+- **Server/Views/login.html** - Mock login page for demonstration
 
 ## Troubleshooting
+
+### General Issues
 
 **Blank page or documentation not loading?**
 - Open browser console (F12) and check for JavaScript errors
@@ -165,6 +196,29 @@ To add JWT authentication for secured deployments:
 **Port already in use?**
 - Change port in `Properties/launchSettings.json`
 - Or kill existing process: `lsof -ti:5000 | xargs kill -9`
+
+### JWT Authentication Issues
+
+**Getting 403 Forbidden from Docsie API?**
+- Verify your `DOCSIE_MASTER_KEY` is correct in `.env`
+- Check JWT format - should contain ONLY `exp` claim (no `sub`, `iss`, `aud`, etc.)
+- Test JWT generation: `curl -X POST http://localhost:5145/api/auth/token`
+- Inspect JWT at https://jwt.io to verify it only has `exp` claim
+
+**Login page shows 404 error?**
+- Ensure `Views/login.html` is included in your .csproj file
+- Check that `CopyToOutputDirectory` is set to `PreserveNewest`
+- Restart the API server after making .csproj changes
+
+**Infinite redirect loop?**
+- Check that fallback URL points to your local server: `http://localhost:5145/api/auth/login`
+- Verify JWT is being added to URL as `?token=...` not `#jwt=...`
+- Clear browser cookies and try again
+
+**Docker containers not starting?**
+- Run `docker-compose logs` to see error messages
+- Ensure ports 5000 and 5145 are not already in use
+- Check that `.env` file exists in the root directory
 
 ## Blazor WASM vs Razor Pages
 

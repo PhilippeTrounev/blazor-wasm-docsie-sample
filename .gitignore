@@ -36,3 +36,6 @@ artifacts/
 
 # Rider
 .idea/
+
+# Environment variables (contains secrets)
+.env
