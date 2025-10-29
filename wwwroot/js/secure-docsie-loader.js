@@ -2,13 +2,14 @@
 let secureDocsieScriptElement = null;
 let secureDocsieStyleElement = null;
 
-export function initializeSecureDocsie(deploymentId, jwtToken) {
+export function initializeSecureDocsie(deploymentId, jwtToken, redirectUrl) {
     // Clean up any existing instances first
     cleanupSecureDocsie();
 
     console.log('🔐 Initializing Secure Docsie...');
     console.log('📋 Deployment ID:', deploymentId);
     console.log('🎫 JWT Token:', jwtToken ? jwtToken.substring(0, 50) + '...' : 'NONE');
+    console.log('🔄 Redirect URL:', redirectUrl);
 
     // Add JWT token to URL if provided and not already present
     if (jwtToken && jwtToken.length > 0) {
@@ -39,9 +40,9 @@ export function initializeSecureDocsie(deploymentId, jwtToken) {
     // 3. If invalid/missing, redirect to authorizationFallbackURL
     let config = `docsie_pk_key:${deploymentId}`;
 
-    // Set fallback URL to our mock login page
+    // Set fallback URL from config (or use default if not provided)
     // When Docsie can't authenticate, it will redirect here
-    const fallbackUrl = 'http://localhost:5145/api/auth/login';
+    const fallbackUrl = redirectUrl || 'http://localhost:5145/api/auth/login';
     const currentPageUrl = window.location.href.split('?')[0]; // Base URL without query params
     const fullFallbackUrl = `${fallbackUrl}?redirect=${encodeURIComponent(currentPageUrl)}`;
 

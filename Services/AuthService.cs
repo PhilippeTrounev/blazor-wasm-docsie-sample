@@ -32,9 +32,37 @@ public class AuthService
             return null;
         }
     }
+
+    public async Task<DocsieConfig?> GetDocsieConfigAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"{API_BASE_URL}/api/config/docsie");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<DocsieConfig>();
+                return result;
+            }
+
+            Console.WriteLine($"Failed to get Docsie config: {response.StatusCode}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error getting Docsie config: {ex.Message}");
+            return null;
+        }
+    }
 }
 
 public class TokenResponse
 {
     public string Token { get; set; } = string.Empty;
+}
+
+public class DocsieConfig
+{
+    public string DeploymentId { get; set; } = string.Empty;
+    public string RedirectUrl { get; set; } = string.Empty;
 }

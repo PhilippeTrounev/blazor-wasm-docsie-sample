@@ -27,8 +27,10 @@ See [README-DOCKER.md](./README-DOCKER.md) for complete Docker setup instruction
 # 1. Copy environment file
 cp .env.example .env
 
-# 2. Add your Docsie master key to .env
-# Edit .env and set DOCSIE_MASTER_KEY=your_key_here
+# 2. Edit .env and configure your Docsie settings:
+#    DOCSIE_MASTER_KEY=your_master_key_here
+#    DOCSIE_DEPLOYMENT_KEY=your_deployment_id_here
+#    DOCSIE_REDIRECT_URL=http://localhost:5145/api/auth/login
 
 # 3. Run with Docker Compose
 docker-compose up --build
@@ -176,9 +178,22 @@ export function initializeDocsie(deploymentId, jwtToken) {
 
 See the complete implementation in:
 - **Server/Controllers/AuthController.cs** - JWT generation endpoint
+- **Server/Controllers/ConfigController.cs** - Configuration endpoint (deployment ID, redirect URL)
+- **Services/AuthService.cs** - Client service for fetching JWT and config
 - **wwwroot/js/secure-docsie-loader.js** - Client-side token handling
 - **Pages/SecureDocs.razor** - Blazor component integration
 - **Server/Views/login.html** - Mock login page for demonstration
+
+### Configuration Flow
+
+All Docsie configuration is stored in `.env` on the API server and fetched dynamically:
+
+1. **API server** reads `.env` file (DOCSIE_MASTER_KEY, DOCSIE_DEPLOYMENT_KEY, DOCSIE_REDIRECT_URL)
+2. **Blazor client** calls `/api/config/docsie` to get deployment ID and redirect URL
+3. **Blazor client** calls `/api/auth/token` to get JWT token
+4. **JavaScript** initializes Docsie with fetched config and JWT
+
+This keeps all secrets on the server side while allowing the client to configure itself dynamically.
 
 ## Troubleshooting
 
@@ -198,6 +213,12 @@ See the complete implementation in:
 - Or kill existing process: `lsof -ti:5000 | xargs kill -9`
 
 ### JWT Authentication Issues
+
+**Getting "Failed to get Docsie configuration" error?**
+- Make sure `.env` file exists and contains `DOCSIE_DEPLOYMENT_KEY`
+- Test config endpoint: `curl http://localhost:5145/api/config/docsie`
+- Should return: `{"deploymentId":"deployment_...","redirectUrl":"http://..."}`
+- If error: Check API server logs with `docker-compose logs api-server`
 
 **Getting 403 Forbidden from Docsie API?**
 - Verify your `DOCSIE_MASTER_KEY` is correct in `.env`

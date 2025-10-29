@@ -44,12 +44,25 @@
                 module = await JSRuntime.InvokeAsync<IJSObjectReference>(
                     "import", "./js/secure-docsie-loader.js");
 
+                // Get Docsie configuration from backend API
+                var config = await AuthService.GetDocsieConfigAsync();
+
+                if (config == null || string.IsNullOrEmpty(config.DeploymentId))
+                {
+                    errorMessage = "Failed to get Docsie configuration from server. Make sure the API server is running and .env is configured with DOCSIE_DEPLOYMENT_KEY";
+                    isLoading = false;
+                    StateHasChanged();
+                    return;
+                }
+
+                Console.WriteLine($"Got Docsie config: DeploymentId={config.DeploymentId}, RedirectUrl={config.RedirectUrl}");
+
                 // Get JWT token from backend API
                 string? jwtToken = await AuthService.GetJwtTokenAsync();
 
                 if (string.IsNullOrEmpty(jwtToken))
                 {
-                    errorMessage = "Failed to get authentication token from server. Make sure the API server is running on http://localhost:5145";
+                    errorMessage = "Failed to get authentication token from server. Make sure the API server is running and .env is configured with DOCSIE_MASTER_KEY";
                     isLoading = false;
                     StateHasChanged();
                     return;
@@ -60,8 +73,9 @@
                 // Initialize Docsie with deployment ID and JWT
                 // The JS will add token to URL and set fallback to our login page
                 await module.InvokeVoidAsync("initializeSecureDocsie",
-                    "deployment_No7ZEhXLoDHoW4RH7",
-                    jwtToken);
+                    config.DeploymentId,
+                    jwtToken,
+                    config.RedirectUrl);
 
                 isInitialized = true;
                 isLoading = false;

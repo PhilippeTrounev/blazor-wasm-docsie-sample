@@ -128,20 +128,23 @@ docker-compose down -v
 Required in `.env` file:
 
 ```bash
-# Docsie Master Key (from your deployment)
+# Docsie Master Key (from your deployment settings)
+# Get this from: https://app.docsie.io → Your Deployment → Settings
 DOCSIE_MASTER_KEY=key_VKvx...
 
 # Docsie Deployment Key
+# Example: deployment_No7ZEhXLoDHoW4RH7
 DOCSIE_DEPLOYMENT_KEY=deployment_No7ZEhXL...
 
-# JWT Settings
-JWT_ISSUER=blazor-docsie-sample
-JWT_AUDIENCE=docsie-portal
-JWT_EXPIRY_MINUTES=60
+# Redirect URL for authentication fallback
+# Where users are redirected if JWT authentication fails
+DOCSIE_REDIRECT_URL=http://localhost:5145/api/auth/login
 
-# API Server URL (for Blazor client)
-API_BASE_URL=http://api-server:8080
+# JWT Settings
+JWT_EXPIRY_MINUTES=60
 ```
+
+**Note:** All configuration is now fetched from the API server at runtime. The Blazor client calls `/api/config/docsie` to get `deploymentId` and `redirectUrl` dynamically.
 
 ## Troubleshooting
 
