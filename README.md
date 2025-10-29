@@ -188,12 +188,56 @@ See the complete implementation in:
 
 All Docsie configuration is stored in `.env` on the API server and fetched dynamically:
 
-1. **API server** reads `.env` file (DOCSIE_MASTER_KEY, DOCSIE_DEPLOYMENT_KEY, DOCSIE_REDIRECT_URL)
-2. **Blazor client** calls `/api/config/docsie` to get deployment ID and redirect URL
-3. **Blazor client** calls `/api/auth/token` to get JWT token
-4. **JavaScript** initializes Docsie with fetched config and JWT
+```
+┌──────────────────┐         ┌──────────────────┐         ┌──────────────────┐
+│   .env file      │────────>│   API Server     │<────────│  Blazor Client   │
+│  (Port 5145)     │         │   (Port 5145)    │         │   (Port 5000)    │
+└──────────────────┘         └──────────────────┘         └──────────────────┘
+                                      │                             │
+  DOCSIE_MASTER_KEY                   │                             │
+  DOCSIE_DEPLOYMENT_KEY    ┌──────────┴──────────┐                 │
+  DOCSIE_REDIRECT_URL      │                     │                 │
+  JWT_EXPIRY_MINUTES       │                     │                 │
+                           ▼                     ▼                 │
+                  ┌─────────────────┐   ┌─────────────────┐       │
+                  │ ConfigController│   │  AuthController │       │
+                  │                 │   │                 │       │
+                  │ GET /api/config │   │ POST /api/auth  │       │
+                  │     /docsie     │   │     /token      │       │
+                  └─────────────────┘   └─────────────────┘       │
+                           │                     │                 │
+                           │  deploymentId       │  JWT token      │
+                           │  redirectUrl        │  (exp only)     │
+                           └─────────────────────┴─────────────────┘
+                                                 │
+                                                 ▼
+                                      ┌──────────────────────┐
+                                      │ SecureDocs.razor     │
+                                      │  OnAfterRenderAsync  │
+                                      └──────────────────────┘
+                                                 │
+                                                 ▼
+                                      ┌──────────────────────┐
+                                      │ secure-docsie-       │
+                                      │ loader.js            │
+                                      │                      │
+                                      │ initializeSecure     │
+                                      │ Docsie(              │
+                                      │   deploymentId,      │
+                                      │   jwtToken,          │
+                                      │   redirectUrl        │
+                                      │ )                    │
+                                      └──────────────────────┘
+```
 
-This keeps all secrets on the server side while allowing the client to configure itself dynamically.
+**Flow:**
+1. **API server** reads `.env` file on startup
+2. **Blazor client** calls `GET /api/config/docsie` → gets deployment ID and redirect URL
+3. **Blazor client** calls `POST /api/auth/token` → gets JWT token (signed with master key)
+4. **JavaScript** initializes Docsie with all fetched configuration
+5. **Docsie script** validates JWT with Docsie Cloud using master key
+
+This keeps all secrets (master key) on the server side while allowing the client to configure itself dynamically.
 
 ## Troubleshooting
 
